@@ -9,7 +9,7 @@
     "start": "node index.js",
     "dev": "node index.js"
   },
-  "engines": {
+  "engines": {  
     "node": ">=18 <=22"
   },
   "keywords": [
