@@ -75,3 +75,136 @@ The goal of this project was to:
 
 ## 🏗 System Architecture
 
+```
+User
+   ↓
+Bot Framework Emulator / Web Channel
+   ↓
+Node.js Server (Restify)
+   ↓
+Azure AI Language Service
+   ↓
+Sentiment + Key Phrases + PII Detection
+   ↓
+Guided Troubleshooting Response
+```
+
+---
+
+## 🚀 Installation (Local Setup)
+
+### 1️⃣ Clone the repository
+
+```bash
+git clone https://github.com/Vitolop1/azure-intelligent-support-bot.git
+cd azure-intelligent-support-bot
+```
+
+### 2️⃣ Install dependencies
+
+```bash
+npm install
+```
+
+### 3️⃣ Create a `.env` file
+
+```
+LANGUAGE_ENDPOINT=your_azure_endpoint
+LANGUAGE_KEY=your_azure_key
+BOT_APP_ID=
+BOT_APP_PASSWORD=
+PORT=3978
+```
+
+### 4️⃣ Start the bot
+
+```bash
+npm start
+```
+
+### 5️⃣ Connect using Bot Framework Emulator
+
+```
+http://localhost:3978/api/messages
+```
+
+---
+
+## ☁️ Live Deployment
+
+The application is deployed on Render.
+
+Base URL:
+```
+https://azure-intelligent-support-bot.onrender.com
+```
+
+Health check endpoint:
+```
+GET /
+```
+
+Bot endpoint:
+```
+POST /api/messages
+```
+
+---
+
+## 💬 Example Interaction
+
+**User:**  
+My internet is not working and I’m frustrated.
+
+**Bot:**  
+I got you — we’ll fix this 💪  
+Network mode activated. Are you on Wi-Fi or Ethernet?
+
+---
+
+## 🔐 Security Practices
+
+- `.env` excluded via `.gitignore`
+- Azure credentials never committed
+- Environment variables securely handled
+- PII detection warning system implemented
+- Safe redaction recommendations included
+
+---
+
+## 📚 Learning Outcomes
+
+This project demonstrates:
+
+- Cloud AI integration  
+- REST API architecture  
+- Secure credential management  
+- Azure AI Language usage  
+- Session state handling  
+- Real-time sentiment-aware response design  
+- Public cloud deployment workflow  
+
+---
+
+## 👨‍💻 Author
+
+**Vito Loprestti**  
+Computer Science Student  
+University of Lynchburg  
+
+GitHub: https://github.com/Vitolop1  
+
+---
+
+## 🏁 Project Status
+
+✔ Fully Functional  
+✔ Azure AI Integrated  
+✔ Publicly Deployed  
+✔ Academic Submission Ready  
+
+---
+
+<p align="center">
+  <b>Built with Azure AI 🚀</b>
+</p>
