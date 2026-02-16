@@ -1,73 +1,124 @@
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    const chat = document.getElementById("chat");
-    const input = document.getElementById("msg");
-    const sendBtn = document.getElementById("send");
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Azure Intelligent Support Bot</title>
+  <style>
+    :root { --bg:#0b0f17; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#22c55e; --me:#1f2937; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text); }
+    .wrap { max-width: 880px; margin: 40px auto; padding: 0 16px; }
+    .hero { display:flex; gap:16px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .title { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .pill { font-size:12px; color:#0b0f17; background: var(--accent); padding: 6px 10px; border-radius: 999px; font-weight: 700;}
+    .card { background: var(--card); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow:hidden; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+    .chat { height: 520px; overflow:auto; padding: 16px; display:flex; flex-direction:column; gap:10px; }
+    .msg { max-width: 78%; padding: 10px 12px; border-radius: 14px; line-height: 1.3; white-space: pre-wrap; }
+    .bot { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.25); align-self:flex-start; }
+    .me { background: var(--me); border: 1px solid rgba(255,255,255,.10); align-self:flex-end; }
+    .bar { display:flex; gap:10px; padding: 12px; border-top: 1px solid rgba(255,255,255,.08); background: rgba(0,0,0,.12); }
+    input { flex:1; padding: 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.25); color: var(--text); outline:none; }
+    button { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(34,197,94,.18); color: var(--text); font-weight: 800; cursor:pointer; }
+    button:hover { background: rgba(34,197,94,.28); }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    code { background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="title">🤖 Azure Intelligent Support Bot</div>
+        <div class="subtitle">Web demo (no Emulator). Talks to <code>/api/analyze</code>.</div>
+      </div>
+      <div class="pill">LIVE DEMO</div>
+    </div>
 
-    if (!chat || !input || !sendBtn) {
-      console.error("Missing #chat, #msg, or #send element in HTML.");
-      return;
-    }
+    <div class="card">
+      <div id="chat" class="chat"></div>
+      <div class="bar">
+        <input id="msg" placeholder="Describe your issue (don’t paste passwords/keys)..." autocomplete="off" />
+        <button id="send">Send</button>
+      </div>
+    </div>
 
-    let sessionId = localStorage.getItem("botSessionId") || "";
+    <div class="hint">
+      Tip: try <code>start</code>, <code>help</code>, <code>summary</code>.
+    </div>
+  </div>
 
-    function addMessage(text, who = "bot") {
-      const wrap = document.createElement("div");
-      const bubble = document.createElement("div");
-      bubble.className = "msg " + (who === "me" ? "me" : "bot");
-      bubble.textContent = text;
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const chat = document.getElementById("chat");
+      const input = document.getElementById("msg");
+      const sendBtn = document.getElementById("send");
 
-      wrap.appendChild(bubble);
-      chat.appendChild(wrap);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    async function send() {
-      const text = (input.value || "").trim();
-      if (!text) return;
-
-      input.value = "";
-      addMessage(text, "me");
-
-      try {
-        const r = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, sessionId }),
-        });
-
-        let data = null;
-        const contentType = r.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          data = await r.json();
-        } else {
-          const raw = await r.text();
-          addMessage(`Server returned non-JSON:\n${raw.slice(0, 300)}`, "bot");
-          return;
-        }
-
-        if (!r.ok) {
-          addMessage(`Server error (${r.status}): ${data?.error || r.statusText}`, "bot");
-          return;
-        }
-
-        if (data.sessionId) {
-          sessionId = data.sessionId;
-          localStorage.setItem("botSessionId", sessionId);
-        }
-
-        addMessage(data.reply || "No reply from server.", "bot");
-      } catch (e) {
-        console.error(e);
-        addMessage("Could not reach the server. If using Render Free, it may be waking up — try again in a few seconds.", "bot");
+      if (!chat || !input || !sendBtn) {
+        console.error("Missing elements. Check ids: #chat #msg #send");
+        return;
       }
-    }
 
-    sendBtn.addEventListener("click", send);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") send();
+      let sessionId = localStorage.getItem("botSessionId") || "";
+
+      function addMessage(text, who = "bot") {
+        const wrap = document.createElement("div");
+        const bubble = document.createElement("div");
+        bubble.className = "msg " + (who === "me" ? "me" : "bot");
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      async function send() {
+        const text = (input.value || "").trim();
+        if (!text) return;
+
+        input.value = "";
+        addMessage(text, "me");
+
+        try {
+          const r = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, sessionId })
+          });
+
+          const contentType = r.headers.get("content-type") || "";
+          if (!contentType.includes("application/json")) {
+            const raw = await r.text();
+            addMessage("Server returned non-JSON:\n" + raw.slice(0, 300), "bot");
+            return;
+          }
+
+          const data = await r.json();
+
+          if (!r.ok) {
+            addMessage(`Server error (${r.status}): ` + (data?.error || r.statusText), "bot");
+            return;
+          }
+
+          if (data.sessionId) {
+            sessionId = data.sessionId;
+            localStorage.setItem("botSessionId", sessionId);
+          }
+
+          addMessage(data.reply || "No reply from server.", "bot");
+        } catch (e) {
+          console.error(e);
+          addMessage("Could not reach the server (Render may be waking up). Try again.", "bot");
+        }
+      }
+
+      sendBtn.addEventListener("click", send);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") send();
+      });
+
+      addMessage("Hi! Type `start` to begin. Tell me what’s wrong and I’ll guide you step-by-step.", "bot");
     });
-
-    addMessage("Hi! Tell me your issue and I’ll guide you step-by-step. Type `start` to begin.", "bot");
-  });
-</script>
+  </script>
+</body>
+</html>
