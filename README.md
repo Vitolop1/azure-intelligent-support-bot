@@ -1,167 +1,185 @@
-🤖 Azure Intelligent Support Bot
+# 🤖 Azure Intelligent Support Bot
 
+<p align="center">
+  <b>AI-Powered Tech Support Assistant built with Microsoft Azure & Bot Framework</b>
+</p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18%2B-green?style=for-the-badge&logo=node.js">
+  <img src="https://img.shields.io/badge/Azure-AI%20Language-0078D4?style=for-the-badge&logo=microsoft-azure">
+  <img src="https://img.shields.io/badge/Bot-Framework-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge">
+</p>
 
+---
 
+## 🧠 Overview
 
+**Azure Intelligent Support Bot** is a cloud-integrated conversational assistant that simulates a modern technical support agent.
 
+It analyzes user messages using **Azure AI Language Service (Sentiment Analysis)** and generates contextual responses in real-time.
 
+This project demonstrates a real-world integration of:
 
+- Microsoft Bot Framework  
+- Azure AI Language Service  
+- Azure Active Directory Authentication  
+- Node.js backend architecture  
+- Cloud deployment readiness  
 
+---
 
-AI-powered Tech Support Assistant built with Microsoft Azure AI and Bot Framework SDK
+## 🎯 Project Objective
 
-Developed by Vito Loprestti
-CS-380 Artificial Intelligence – Module 5
+The goal of this project is to:
 
-🧠 Overview
+- Integrate Azure Cognitive Services into a live Node.js application  
+- Demonstrate secure cloud-based AI processing  
+- Build a production-style conversational assistant  
+- Analyze real-time user sentiment  
+- Simulate intelligent technical support behavior  
 
-Azure Intelligent Support Bot is a cloud-integrated conversational assistant designed to simulate a modern technical support agent.
+---
 
-The bot analyzes user messages using Azure AI Language Service (Sentiment Analysis) and generates intelligent, contextual responses.
+## ⚙️ Tech Stack
 
-This project demonstrates real-world integration of:
+| Technology | Purpose |
+|------------|----------|
+| Node.js | Backend runtime |
+| Restify | Web server |
+| Bot Framework SDK | Bot communication layer |
+| Azure AI Language | Sentiment Analysis |
+| Azure AD | Authentication |
+| Render / Azure App Service | Cloud Deployment |
 
-Microsoft Bot Framework
+---
 
-Azure AI Language Service
+## 🏗 System Architecture
 
-Azure Active Directory Authentication
-
-Node.js backend architecture
-
-Cloud deployment readiness
-
-🎯 Objective
-
-The purpose of this project is to:
-
-Integrate Azure Cognitive Services into a live application
-
-Demonstrate secure cloud-based AI processing
-
-Build a production-style conversational bot
-
-Analyze real-time user sentiment
-
-Simulate intelligent technical support behavior
-
-⚙️ Tech Stack
-
-Node.js
-
-Restify
-
-Bot Framework SDK
-
-Azure AI Language (Sentiment Analysis)
-
-Azure AD Authentication
-
-Render / Azure App Service (Deployment Ready)
-
-🏗 Architecture Flow
-
+```
 User
-↓
+   ↓
 Bot Framework Emulator / Web Channel
-↓
-Node.js Server
-↓
+   ↓
+Node.js Server (Restify)
+   ↓
 Azure AI Language Service
-↓
+   ↓
 Sentiment Analysis
-↓
-Response Returned to User
+   ↓
+Intelligent Response Returned to User
+```
 
-🚀 Installation (Local Setup)
+---
 
-Clone the repository:
+## 🚀 Installation (Local Setup)
 
+### 1️⃣ Clone the repository
+
+```bash
 git clone https://github.com/Vitolop1/azure-intelligent-support-bot.git
 cd azure-intelligent-support-bot
+```
+
+### 2️⃣ Install dependencies
+
+```bash
 npm install
+```
 
+### 3️⃣ Create a `.env` file
 
-Create a .env file in the root directory:
-
+```
 LANGUAGE_ENDPOINT=your_azure_endpoint
 LANGUAGE_KEY=your_azure_key
 BOT_APP_ID=
 BOT_APP_PASSWORD=
 PORT=3978
+```
 
+### 4️⃣ Start the bot
 
-Start the bot:
-
+```bash
 npm start
+```
 
+### 5️⃣ Connect using Bot Framework Emulator
 
-Then connect using Bot Framework Emulator:
-
+```
 http://localhost:3978/api/messages
+```
 
-💬 Example Interaction
+---
 
-User:
-Hi, I love this class
+## 💬 Example Interaction
 
-Bot:
+**User:**  
+Hi, I love this class  
+
+**Bot:**  
 I detect your sentiment as: positive (pos 0.92, neu 0.06, neg 0.02)
 
-🔐 Security
+---
 
-.env file is excluded via .gitignore
+## 🔐 Security Practices
 
-Azure credentials are never committed
+- `.env` file excluded via `.gitignore`
+- Azure credentials never committed
+- Secure Azure authentication flow
+- Environment variables managed properly
+- Production-ready structure
 
-Uses secure Azure authentication flow
+---
 
-Environment variables managed safely
+## ☁️ Deployment Ready
 
-☁️ Deployment
+This bot can be deployed to:
 
-This bot is fully deployable to:
+- Azure App Service  
+- Azure Web Apps  
+- Azure Container Apps  
+- Render  
 
-Render
+Start command for deployment:
 
-Azure App Service
-
-Azure Web Apps
-
-Azure Container Apps
-
-Start command:
-
+```bash
 npm start
+```
 
-📚 Learning Outcomes
+---
+
+## 📚 Learning Outcomes
 
 This project demonstrates:
 
-Cloud AI integration
+- Cloud AI integration  
+- REST API architecture  
+- Secure credential management  
+- Azure Cognitive Services usage  
+- Production-style backend design  
+- Real-time AI sentiment analysis  
 
-REST API handling
+---
 
-Secure credential management
+## 👨‍💻 Author
 
-Azure Cognitive Services usage
+**Vito Loprestti**  
+Computer Science Student  
+University of Lynchburg  
 
-Production-style backend design
+GitHub: https://github.com/Vitolop1  
 
-Real-time sentiment analysis
+---
 
-👨‍💻 Author
+## 🏁 Project Status
 
-Vito Loprestti
-Computer Science Student
-University of Lynchburg
+✔ Functional  
+✔ Azure Integrated  
+✔ Cloud Deployable  
+✔ Production-Ready Structure  
 
-GitHub: https://github.com/Vitolop1
+---
 
-🏁 Status
-
-Functional
-Azure Integrated
-Cloud Deployable
-Production-Ready Structure
+<p align="center">
+  <b>Built with Azure AI 🚀</b>
+</p>
