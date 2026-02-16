@@ -7,9 +7,11 @@
 
   function addMessage(text, who = "bot", meta = "") {
     const wrap = document.createElement("div");
+
     const bubble = document.createElement("div");
     bubble.className = "msg " + (who === "me" ? "me" : "bot");
     bubble.textContent = text;
+
     wrap.appendChild(bubble);
 
     if (meta) {
@@ -26,6 +28,7 @@
   async function send() {
     const text = (input.value || "").trim();
     if (!text) return;
+
     input.value = "";
     addMessage(text, "me");
 
@@ -36,29 +39,50 @@
         body: JSON.stringify({ text, sessionId })
       });
 
-      const data = await r.json();
+      let data;
+      try {
+        data = await r.json();
+      } catch {
+        addMessage("Invalid server response (not JSON). Check Render logs.", "bot");
+        return;
+      }
 
       if (!r.ok) {
         addMessage("Server error: " + (data?.error || r.statusText), "bot");
         return;
       }
 
-      // save session id
+      // Save session ID if provided
       if (data.sessionId) {
         sessionId = data.sessionId;
         localStorage.setItem("botSessionId", sessionId);
       }
 
-      addMessage(data.reply, "bot");
+      // Show reply
+      addMessage(data.reply || "No reply from server.", "bot");
+
+      // Optional meta display
+      if (data.meta) {
+        const metaText = Object.entries(data.meta)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(" | ");
+        addMessage(metaText, "bot", "");
+      }
+
     } catch (e) {
-      addMessage("Could not reach the server. Is the service live on Render?", "bot");
+      console.error(e);
+      addMessage("Could not reach the server. Is the Render service running?", "bot");
     }
   }
 
   sendBtn.addEventListener("click", send);
+
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") send();
   });
 
-  addMessage("Hi! I’m your Tech Support Copilot. Tell me what’s wrong and I’ll guide you step-by-step.", "bot");
+  addMessage(
+    "Hi! I’m your Tech Support Copilot. Tell me what’s wrong and I’ll guide you step-by-step.",
+    "bot"
+  );
 </script>
