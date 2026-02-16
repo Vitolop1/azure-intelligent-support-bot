@@ -1,0 +1,31 @@
+{
+  "name": "module5chatbot",
+  "version": "1.0.0",
+  "description": "Azure AI Tech Support Bot - CS380 Module 5",
+  "main": "index.js",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "engines": {
+    "node": ">=18 <=22"
+  },
+  "keywords": [
+    "azure",
+    "botframework",
+    "ai",
+    "sentiment",
+    "tech-support"
+  ],
+  "author": "Vito Loprestti",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/ai-language-text": "^1.1.0",
+    "@azure/core-auth": "^1.10.1",
+    "botbuilder": "^4.23.3",
+    "dotenv": "^17.3.1",
+    "restify": "^11.1.0"
+  }
+}
