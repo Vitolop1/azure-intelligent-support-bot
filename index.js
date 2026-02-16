@@ -1,9 +1,16 @@
 // index.js - Azure Intelligent Support Bot (Pro)
 // Bot Framework + Restify + Azure AI Language (Sentiment/KeyPhrases/Lang/PII)
 //
-// Key Fix for remote Emulator:
-// If activity.serviceUrl points to localhost (from Emulator) while bot is hosted remotely,
-// we force deliveryMode="expectReplies" so responses return in the HTTP response (no callback to localhost).
+// IMPORTANT FIXES (your file was broken because):
+// 1) `server.get(...)` was called BEFORE `server` existed
+// 2) `adapter` was used BEFORE it was created
+// 3) You were calling `server.listen(...)` TWICE (one of them had to go)
+// 4) Static hosting line was incorrect/optional (kept as optional + safe)
+//
+// Remote Emulator note:
+// If the bot is hosted remotely (Render) and Emulator runs locally, the activity.serviceUrl
+// often points to localhost. We force deliveryMode="expectReplies" so replies come back
+// in the HTTP response (no callback to localhost).
 
 "use strict";
 
@@ -14,24 +21,10 @@ const { BotFrameworkAdapter } = require("botbuilder");
 const { AzureKeyCredential } = require("@azure/core-auth");
 const { TextAnalysisClient } = require("@azure/ai-language-text");
 
-server.get("/", restify.plugins.serveStatic({
-  directory: __dirname + "/public",
-  default: "index.html"
-}));
-
-
 // ------------------------------------------------------
-// Config & Validation
+// Helpers
 // ------------------------------------------------------
 const PORT = process.env.PORT || 3978;
-
-function env(name, { required = false, fallback = "" } = {}) {
-  const v = process.env[name];
-  if (required && (!v || !String(v).trim())) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return (v && String(v).trim()) || fallback;
-}
 
 function nowISO() {
   return new Date().toISOString();
@@ -55,8 +48,16 @@ function uniqPush(arr, value) {
   if (!arr.includes(value)) arr.push(value);
 }
 
+function env(name, { required = false, fallback = "" } = {}) {
+  const v = process.env[name];
+  if (required && (!v || !String(v).trim())) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return (v && String(v).trim()) || fallback;
+}
+
 // ------------------------------------------------------
-// Azure Language Client (fail fast, but with clear logs)
+// Azure Language Client
 // ------------------------------------------------------
 const LANGUAGE_ENDPOINT = env("LANGUAGE_ENDPOINT", { required: true });
 const LANGUAGE_KEY = env("LANGUAGE_KEY", { required: true });
@@ -94,11 +95,11 @@ async function analyzeLanguage(userText) {
 }
 
 // ------------------------------------------------------
-// In-memory sessions (demo-grade)
+// Sessions (in-memory demo)
 // ------------------------------------------------------
 const sessions = new Map();
-// TTL cleanup (memory safety)
-const SESSION_TTL_MS = 45 * 60 * 1000; // 45 minutes
+const SESSION_TTL_MS = 45 * 60 * 1000;
+
 setInterval(() => {
   const cutoff = Date.now() - SESSION_TTL_MS;
   for (const [cid, s] of sessions.entries()) {
@@ -148,7 +149,7 @@ function resetSession(session) {
 }
 
 // ------------------------------------------------------
-// Tone + Formatting
+// Tone / Formatting
 // ------------------------------------------------------
 function tonePrefix(sentimentDoc) {
   const sentiment = sentimentDoc?.sentiment || "neutral";
@@ -168,10 +169,11 @@ function formatConfidence(sentimentDoc) {
 function piiWarning(piiDoc) {
   const entities = piiDoc?.entities || [];
   if (!entities.length) return null;
+
   const types = [...new Set(entities.map((e) => e.category).filter(Boolean))].slice(0, 6);
   return `⚠️ I might be seeing sensitive info (${types.join(
     ", "
-  )}). Please don’t paste passwords, keys, full emails, card numbers, or tokens. Redact like: ABCD****WXYZ.`;
+  )}). Don’t paste passwords/keys/cards/tokens. Redact like: ABCD****WXYZ.`;
 }
 
 function ticketSummary(ticket) {
@@ -190,7 +192,7 @@ function ticketSummary(ticket) {
 }
 
 // ------------------------------------------------------
-// Issue Classification + Flows
+// Classification + Flows
 // ------------------------------------------------------
 function classifyIssue(text, keyPhrases = []) {
   const t = lower(text);
@@ -259,6 +261,21 @@ function parseModeCommand(text) {
 }
 
 // ------------------------------------------------------
+// Bot Adapter (MUST be created before server.post uses it)
+// ------------------------------------------------------
+const adapter = new BotFrameworkAdapter({
+  appId: env("BOT_APP_ID", { fallback: "" }),
+  appPassword: env("BOT_APP_PASSWORD", { fallback: "" }),
+});
+
+adapter.onTurnError = async (context, err) => {
+  console.error("[BotError]", err);
+  try {
+    await context.sendActivity("⚠️ Something went wrong on my end. Check server logs.");
+  } catch (_) {}
+};
+
+// ------------------------------------------------------
 // Restify Server
 // ------------------------------------------------------
 const server = restify.createServer();
@@ -272,6 +289,16 @@ server.get("/", (_req, res, _next) => {
     time: nowISO(),
   });
 });
+
+// OPTIONAL static site (only if you create /public/index.html)
+// If you DON'T have /public, you can delete this block safely.
+server.get(
+  "/site/*",
+  restify.plugins.serveStatic({
+    directory: __dirname,
+    default: "public/index.html",
+  })
+);
 
 // Bot messages endpoint
 server.post("/api/messages", async (req, res) => {
@@ -294,7 +321,7 @@ server.post("/api/messages", async (req, res) => {
       return;
     }
 
-    // ---- Commands first
+    // Commands first
     const t = lower(userText);
 
     if (t === "help") {
@@ -331,7 +358,7 @@ server.post("/api/messages", async (req, res) => {
       return;
     }
 
-    // ---- Azure Language analysis
+    // Azure Language analysis
     let analysis;
     try {
       analysis = await analyzeLanguage(userText);
@@ -343,7 +370,7 @@ server.post("/api/messages", async (req, res) => {
       return;
     }
 
-    // ---- PII warning
+    // PII warning
     const piiMsg = piiWarning(analysis.pii);
     if (piiMsg) await context.sendActivity(piiMsg);
 
@@ -354,12 +381,11 @@ server.post("/api/messages", async (req, res) => {
     const keyPhrases = analysis.keyphrases?.keyPhrases || [];
     const topKP = keyPhrases.slice(0, 6);
 
-    // ---- First message in idle => auto-route
+    // Idle => auto-route
     if (session.mode === "idle") {
       session.mode = classifyIssue(userText, topKP);
       session.step = 0;
 
-      // store initial issue
       session.ticket.issue = session.ticket.issue || userText.slice(0, 180);
       if (topKP.length) uniqPush(session.ticket.symptoms, "keywords: " + topKP.join(", "));
 
@@ -370,18 +396,17 @@ server.post("/api/messages", async (req, res) => {
       return;
     }
 
-    // ---- store keywords sometimes (no spam)
     if (topKP.length) uniqPush(session.ticket.symptoms, "keywords: " + topKP.join(", "));
 
-    // ------------------------------------------------------
-    // Guided Flows
-    // ------------------------------------------------------
+    // Guided flows
     if (session.mode === "triage") {
       if (session.step === 0) {
         session.ticket.issue = userText;
         session.step = 1;
         await context.sendActivity(`${tonePrefix(analysis.sentiment)} Got it.`);
-        await context.sendActivity("1) What device are you on? (Windows laptop / Mac / phone + model if possible)");
+        await context.sendActivity(
+          "1) What device are you on? (Windows laptop / Mac / phone + model if possible)"
+        );
         return;
       }
       if (session.step === 1) {
@@ -418,10 +443,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.symptoms, "connection: " + userText);
         session.step = 2;
         await context.sendActivity(
-          "Quick checks:\n" +
-            "A) Can you open any website?\n" +
-            "B) Does it fail on ALL sites or only one?\n" +
-            "Reply like: A=yes B=all"
+          "Quick checks:\nA) Can you open any website?\nB) Does it fail on ALL sites or only one?\nReply like: A=yes B=all"
         );
         return;
       }
@@ -429,10 +451,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.symptoms, "basic check: " + userText);
         session.step = 3;
         await context.sendActivity(
-          "Run ONE command (Windows) and paste output (redact if you want):\n" +
-            "1) ipconfig /all\n" +
-            "2) ping 8.8.8.8 -n 4\n" +
-            "3) nslookup google.com"
+          "Run ONE command (Windows) and paste output (redact if you want):\n1) ipconfig /all\n2) ping 8.8.8.8 -n 4\n3) nslookup google.com"
         );
         return;
       }
@@ -444,25 +463,15 @@ server.post("/api/messages", async (req, res) => {
         const l = lower(userText);
         if (l.includes("request timed out") || l.includes("unreachable")) {
           await context.sendActivity(
-            "That looks like a connectivity path issue.\n" +
-              "Try:\n" +
-              "- Toggle Wi-Fi off/on\n" +
-              "- Reboot router\n" +
-              "- Forget network + reconnect\n" +
-              "- Test a phone hotspot (to isolate the network)"
+            "That looks like a connectivity path issue.\nTry:\n- Toggle Wi-Fi off/on\n- Reboot router\n- Forget network + reconnect\n- Test a phone hotspot (to isolate the network)"
           );
         } else if (l.includes("server can't find") || l.includes("dns") || l.includes("non-existent domain")) {
           await context.sendActivity(
-            "That looks like DNS.\n" +
-              "Try:\n" +
-              "- ipconfig /flushdns\n" +
-              "- Temporarily set DNS to 1.1.1.1 or 8.8.8.8\n" +
-              "- Restart your network adapter"
+            "That looks like DNS.\nTry:\n- ipconfig /flushdns\n- Temporarily set DNS to 1.1.1.1 or 8.8.8.8\n- Restart your network adapter"
           );
         } else {
           await context.sendActivity(
-            "Thanks — I can work with that.\n" +
-              "Next: does it happen only on this device, or multiple devices on the same network?"
+            "Thanks — I can work with that.\nNext: does it happen only on this device, or multiple devices on the same network?"
           );
         }
 
@@ -485,10 +494,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.symptoms, "recent change: " + userText);
         session.step = 2;
         await context.sendActivity(
-          "Quick Windows checks:\n" +
-            "1) Settings → Windows Update (any pending?)\n" +
-            "2) Run: sfc /scannow (Command Prompt as Admin)\n" +
-            "Tell me the result messages."
+          "Quick Windows checks:\n1) Settings → Windows Update (any pending?)\n2) Run: sfc /scannow (Command Prompt as Admin)\nTell me the result messages."
         );
         return;
       }
@@ -498,10 +504,7 @@ server.post("/api/messages", async (req, res) => {
         session.step = 3;
 
         await context.sendActivity(
-          "Next step options:\n" +
-            "- If it’s an app crash: update/reinstall + run as admin\n" +
-            "- If it’s BSOD: tell me the stop code + recent drivers\n" +
-            "- If it’s slow: Task Manager (CPU/RAM/Disk) screenshot details"
+          "Next step options:\n- If it’s an app crash: update/reinstall + run as admin\n- If it’s BSOD: tell me the stop code + recent drivers\n- If it’s slow: Task Manager (CPU/RAM/Disk) details"
         );
         await context.sendActivity("Want me to focus on `mode app` or stay on `mode windows`?");
         return;
@@ -522,12 +525,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.symptoms, "login type: " + userText);
         session.step = 2;
         await context.sendActivity(
-          "What exactly happens?\n" +
-            "- wrong password\n" +
-            "- MFA loop\n" +
-            "- locked out\n" +
-            "- cannot sign in error\n" +
-            "Paste any error text (redacted)."
+          "What exactly happens?\n- wrong password\n- MFA loop\n- locked out\n- cannot sign in error\nPaste any error text (redacted)."
         );
         return;
       }
@@ -535,12 +533,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.errors, userText);
         session.step = 3;
         await context.sendActivity(
-          "Common fixes:\n" +
-            "- Incognito/private window\n" +
-            "- Clear cookies for the domain\n" +
-            "- Confirm time/date auto-set\n" +
-            "- If MFA: re-register authenticator\n" +
-            "Which did you already try?"
+          "Common fixes:\n- Incognito/private window\n- Clear cookies for the domain\n- Confirm time/date auto-set\n- If MFA: re-register authenticator\nWhich did you already try?"
         );
         return;
       }
@@ -568,13 +561,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.errors, userText);
         session.step = 3;
         await context.sendActivity(
-          "Quick fixes (reply with letters):\n" +
-            "A) Restart app + reboot PC\n" +
-            "B) Update app\n" +
-            "C) Reinstall app\n" +
-            "D) Run as admin\n" +
-            "E) Check permissions/firewall\n" +
-            "Example: A,B,D"
+          "Quick fixes (reply with letters):\nA) Restart app + reboot PC\nB) Update app\nC) Reinstall app\nD) Run as admin\nE) Check permissions/firewall\nExample: A,B,D"
         );
         return;
       }
@@ -582,10 +569,7 @@ server.post("/api/messages", async (req, res) => {
         uniqPush(session.ticket.whatTried, "app fixes tried: " + userText);
         session.step = 4;
         await context.sendActivity(
-          "Nice. If it still fails, we narrow it down:\n" +
-            "- Only your account or all accounts?\n" +
-            "- Does it happen on another device?\n" +
-            "- Any logs? (Event Viewer / app logs)"
+          "Nice. If it still fails, we narrow it down:\n- Only your account or all accounts?\n- Does it happen on another device?\n- Any logs? (Event Viewer / app logs)"
         );
         await context.sendActivity("Type `summary` when you want the final ticket.");
         return;
@@ -595,28 +579,12 @@ server.post("/api/messages", async (req, res) => {
       return;
     }
 
-    // Fallback
     await context.sendActivity("I’m here. Type `start` to begin a guided flow or `help` for commands.");
   });
 });
 
 // ------------------------------------------------------
-// Bot Adapter
-// ------------------------------------------------------
-const adapter = new BotFrameworkAdapter({
-  appId: env("BOT_APP_ID", { fallback: "" }),
-  appPassword: env("BOT_APP_PASSWORD", { fallback: "" }),
-});
-
-adapter.onTurnError = async (context, err) => {
-  console.error("[BotError]", err);
-  try {
-    await context.sendActivity("⚠️ Something went wrong on my end. Check server logs.");
-  } catch (_) {}
-};
-
-// ------------------------------------------------------
-// Start server
+// Start server (ONLY ONCE)
 // ------------------------------------------------------
 server.listen(PORT, () => {
   console.log(`[${nowISO()}] Server running on http://localhost:${PORT}`);
