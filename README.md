@@ -1,7 +1,7 @@
 # 🤖 Azure Intelligent Support Bot
 
 <p align="center">
-  <b>AI-Powered Tech Support Assistant built with Microsoft Azure & Bot Framework</b>
+  <b>Cloud-Deployed AI Tech Support Assistant powered by Microsoft Azure</b>
 </p>
 
 <p align="center">
@@ -16,97 +16,86 @@
 
 ## 📚 Academic Context
 
-This project was developed for:
+Developed for:
 
 **CSC 490 – Artificial Intelligence**  
 University of Lynchburg  
 Spring 2026  
 
-The objective was to integrate Microsoft Azure AI services into a functional cloud-based application and demonstrate real-world AI deployment architecture.
+This project demonstrates the integration of Microsoft Azure AI services into a real-world cloud-deployed application.
 
-Live Service (Health Endpoint):  
-👉 https://azure-intelligent-support-bot.onrender.com  
+🔗 **Live Demo**  
+https://azure-intelligent-support-bot.onrender.com  
 
-GitHub Repository:  
-👉 https://github.com/Vitolop1/azure-intelligent-support-bot  
-
----
-
-## 🧠 Overview
-
-**Azure Intelligent Support Bot** is a cloud-integrated conversational assistant that simulates a modern technical support agent.
-
-It analyzes user messages using:
-
-- ✅ Sentiment Analysis  
-- ✅ Key Phrase Extraction  
-- ✅ Language Detection  
-- ✅ PII Detection  
-
-All powered by **Azure AI Language Service**.
+🔗 **GitHub Repository**  
+https://github.com/Vitolop1/azure-intelligent-support-bot  
 
 ---
 
-## 🎯 Project Objective
+## 🧠 Project Overview
 
-The goal of this project was to:
+Azure Intelligent Support Bot is a production-style conversational assistant that simulates a modern IT support agent.
 
-- Integrate Azure Cognitive Services into a live Node.js backend  
-- Demonstrate secure cloud-based AI processing  
-- Build a production-style conversational assistant  
-- Analyze real-time user sentiment  
-- Implement guided troubleshooting flows  
-- Deploy the solution publicly  
+The system integrates Azure AI Language Service to analyze user messages in real time and dynamically guide troubleshooting workflows.
 
----
+### AI Capabilities
 
-## ⚙️ Tech Stack
+- Sentiment Analysis  
+- Key Phrase Extraction  
+- Language Detection  
+- PII (Sensitive Data) Recognition  
 
-| Technology | Purpose |
-|------------|----------|
-| Node.js | Backend runtime |
-| Restify | Web server |
-| Bot Framework SDK | Bot communication layer |
-| Azure AI Language | NLP processing |
-| Azure AD | Authentication (optional) |
-| Render | Public cloud hosting |
+The bot adapts tone based on sentiment and generates structured, step-by-step troubleshooting flows.
 
 ---
 
 ## 🏗 System Architecture
 
 ```
-User
-   ↓
-Bot Framework Emulator / Web Channel
-   ↓
-Node.js Server (Restify)
-   ↓
+User (Web UI or Emulator)
+        ↓
+Node.js + Restify Server
+        ↓
 Azure AI Language Service
-   ↓
-Sentiment + Key Phrases + PII Detection
-   ↓
-Guided Troubleshooting Response
+        ↓
+NLP Analysis (Sentiment + Key Phrases + PII)
+        ↓
+Guided Troubleshooting Logic
+        ↓
+Structured Response
 ```
 
 ---
 
-## 🚀 Installation (Local Setup)
+## ⚙️ Technology Stack
 
-### 1️⃣ Clone the repository
+| Technology | Purpose |
+|------------|----------|
+| Node.js | Backend runtime |
+| Restify | Web server |
+| Bot Framework SDK | Conversational layer |
+| Azure AI Language | NLP processing |
+| Render | Cloud hosting |
+| Environment Variables | Secure key management |
+
+---
+
+## 🚀 Running Locally
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Vitolop1/azure-intelligent-support-bot.git
 cd azure-intelligent-support-bot
 ```
 
-### 2️⃣ Install dependencies
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3️⃣ Create a `.env` file
+### 3. Create a `.env` file
 
 ```
 LANGUAGE_ENDPOINT=your_azure_endpoint
@@ -116,73 +105,66 @@ BOT_APP_PASSWORD=
 PORT=3978
 ```
 
-### 4️⃣ Start the bot
+### 4. Start the server
 
 ```bash
 npm start
 ```
 
-### 5️⃣ Connect using Bot Framework Emulator
+Open in browser:
 
 ```
-http://localhost:3978/api/messages
+http://localhost:3978
 ```
 
 ---
 
-## ☁️ Live Deployment
+## ☁️ Cloud Deployment
 
-The application is deployed on Render.
+The application is deployed publicly using Render.
 
 Base URL:
 ```
 https://azure-intelligent-support-bot.onrender.com
 ```
 
-Health check endpoint:
+Health Check:
+```
+GET /health
+```
+
+Web Chat:
 ```
 GET /
 ```
 
-Bot endpoint:
+Bot Framework Endpoint:
 ```
 POST /api/messages
 ```
 
 ---
 
-## 💬 Example Interaction
-
-**User:**  
-My internet is not working and I’m frustrated.
-
-**Bot:**  
-I got you — we’ll fix this 💪  
-Network mode activated. Are you on Wi-Fi or Ethernet?
-
----
-
-## 🔐 Security Practices
+## 🔐 Security Considerations
 
 - `.env` excluded via `.gitignore`
 - Azure credentials never committed
-- Environment variables securely handled
-- PII detection warning system implemented
-- Safe redaction recommendations included
+- Environment variables configured securely in production
+- PII detection warns users about sensitive data
+- Server-side validation implemented
 
 ---
 
 ## 📚 Learning Outcomes
 
-This project demonstrates:
+Through this project, I gained experience with:
 
-- Cloud AI integration  
-- REST API architecture  
-- Secure credential management  
-- Azure AI Language usage  
-- Session state handling  
-- Real-time sentiment-aware response design  
-- Public cloud deployment workflow  
+- Azure AI service integration
+- REST API design
+- Session state management
+- Secure credential handling
+- Cloud deployment workflows
+- Production debugging and log analysis
 
 ---
 
@@ -196,15 +178,6 @@ GitHub: https://github.com/Vitolop1
 
 ---
 
-## 🏁 Project Status
-
-✔ Fully Functional  
-✔ Azure AI Integrated  
-✔ Publicly Deployed  
-✔ Academic Submission Ready  
-
----
-
 <p align="center">
-  <b>Built with Azure AI 🚀</b>
+  <b>Built with Microsoft Azure AI 🚀</b>
 </p>
