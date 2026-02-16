@@ -1,7 +1,7 @@
 {
-  "name": "module5chatbot",
+  "name": "azure-intelligent-support-bot",
   "version": "1.0.0",
-  "description": "Azure AI Tech Support Bot - CS380 Module 5",
+  "description": "Azure AI Intelligent Tech Support Bot - CS380 Module 5 Project",
   "main": "index.js",
   "private": true,
   "type": "commonjs",
@@ -16,8 +16,9 @@
     "azure",
     "botframework",
     "ai",
-    "sentiment",
-    "tech-support"
+    "sentiment-analysis",
+    "tech-support",
+    "cs380"
   ],
   "author": "Vito Loprestti",
   "license": "ISC",
