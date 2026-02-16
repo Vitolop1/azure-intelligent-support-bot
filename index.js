@@ -378,7 +378,7 @@ server.get("/health", (_req, res, _next) => {
 });
 
 // Web chat API (THIS is what your HTML calls)
-server.post("/api/analyze", async (req, res, _next) => {
+server.post("/api/analyze", async (req, res) => {
   try {
     const text = safeTrim(req.body?.text);
     const sessionId = safeTrim(req.body?.sessionId);
@@ -388,7 +388,6 @@ server.post("/api/analyze", async (req, res, _next) => {
     const { sid, s } = getSessionById(sessionId || null);
     const out = await handleText(s, text);
 
-    // return reply + sessionId so frontend can keep memory
     return res.send(200, {
       ok: true,
       sessionId: sid,
@@ -399,6 +398,7 @@ server.post("/api/analyze", async (req, res, _next) => {
     return res.send(500, { error: e?.message || "Server error" });
   }
 });
+
 
 // -------------------- Bot Framework Adapter --------------------
 const adapter = new BotFrameworkAdapter({
