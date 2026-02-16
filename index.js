@@ -14,6 +14,12 @@ const { BotFrameworkAdapter } = require("botbuilder");
 const { AzureKeyCredential } = require("@azure/core-auth");
 const { TextAnalysisClient } = require("@azure/ai-language-text");
 
+server.get("/", restify.plugins.serveStatic({
+  directory: __dirname + "/public",
+  default: "index.html"
+}));
+
+
 // ------------------------------------------------------
 // Config & Validation
 // ------------------------------------------------------
