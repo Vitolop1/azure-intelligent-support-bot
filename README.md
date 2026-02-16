@@ -8,8 +8,27 @@
   <img src="https://img.shields.io/badge/Node.js-18%2B-green?style=for-the-badge&logo=node.js">
   <img src="https://img.shields.io/badge/Azure-AI%20Language-0078D4?style=for-the-badge&logo=microsoft-azure">
   <img src="https://img.shields.io/badge/Bot-Framework-blue?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Cloud-Render-purple?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Status-Live-brightgreen?style=for-the-badge">
 </p>
+
+---
+
+## 📚 Academic Context
+
+This project was developed for:
+
+**CSC 490 – Artificial Intelligence**  
+University of Lynchburg  
+Spring 2026  
+
+The objective was to integrate Microsoft Azure AI services into a functional cloud-based application and demonstrate real-world AI deployment architecture.
+
+Live Service (Health Endpoint):  
+👉 https://azure-intelligent-support-bot.onrender.com  
+
+GitHub Repository:  
+👉 https://github.com/Vitolop1/azure-intelligent-support-bot  
 
 ---
 
@@ -17,27 +36,27 @@
 
 **Azure Intelligent Support Bot** is a cloud-integrated conversational assistant that simulates a modern technical support agent.
 
-It analyzes user messages using **Azure AI Language Service (Sentiment Analysis)** and generates contextual responses in real-time.
+It analyzes user messages using:
 
-This project demonstrates a real-world integration of:
+- ✅ Sentiment Analysis  
+- ✅ Key Phrase Extraction  
+- ✅ Language Detection  
+- ✅ PII Detection  
 
-- Microsoft Bot Framework  
-- Azure AI Language Service  
-- Azure Active Directory Authentication  
-- Node.js backend architecture  
-- Cloud deployment readiness  
+All powered by **Azure AI Language Service**.
 
 ---
 
 ## 🎯 Project Objective
 
-The goal of this project is to:
+The goal of this project was to:
 
-- Integrate Azure Cognitive Services into a live Node.js application  
+- Integrate Azure Cognitive Services into a live Node.js backend  
 - Demonstrate secure cloud-based AI processing  
 - Build a production-style conversational assistant  
 - Analyze real-time user sentiment  
-- Simulate intelligent technical support behavior  
+- Implement guided troubleshooting flows  
+- Deploy the solution publicly  
 
 ---
 
@@ -48,9 +67,9 @@ The goal of this project is to:
 | Node.js | Backend runtime |
 | Restify | Web server |
 | Bot Framework SDK | Bot communication layer |
-| Azure AI Language | Sentiment Analysis |
-| Azure AD | Authentication |
-| Render / Azure App Service | Cloud Deployment |
+| Azure AI Language | NLP processing |
+| Azure AD | Authentication (optional) |
+| Render | Public cloud hosting |
 
 ---
 
@@ -65,9 +84,9 @@ Node.js Server (Restify)
    ↓
 Azure AI Language Service
    ↓
-Sentiment Analysis
+Sentiment + Key Phrases + PII Detection
    ↓
-Intelligent Response Returned to User
+Guided Troubleshooting Response
 ```
 
 ---
@@ -111,40 +130,45 @@ http://localhost:3978/api/messages
 
 ---
 
+## ☁️ Live Deployment
+
+The application is deployed on Render.
+
+Base URL:
+```
+https://azure-intelligent-support-bot.onrender.com
+```
+
+Health check endpoint:
+```
+GET /
+```
+
+Bot endpoint:
+```
+POST /api/messages
+```
+
+---
+
 ## 💬 Example Interaction
 
 **User:**  
-Hi, I love this class  
+My internet is not working and I’m frustrated.
 
 **Bot:**  
-I detect your sentiment as: positive (pos 0.92, neu 0.06, neg 0.02)
+I got you — we’ll fix this 💪  
+Network mode activated. Are you on Wi-Fi or Ethernet?
 
 ---
 
 ## 🔐 Security Practices
 
-- `.env` file excluded via `.gitignore`
+- `.env` excluded via `.gitignore`
 - Azure credentials never committed
-- Secure Azure authentication flow
-- Environment variables managed properly
-- Production-ready structure
-
----
-
-## ☁️ Deployment Ready
-
-This bot can be deployed to:
-
-- Azure App Service  
-- Azure Web Apps  
-- Azure Container Apps  
-- Render  
-
-Start command for deployment:
-
-```bash
-npm start
-```
+- Environment variables securely handled
+- PII detection warning system implemented
+- Safe redaction recommendations included
 
 ---
 
@@ -155,9 +179,10 @@ This project demonstrates:
 - Cloud AI integration  
 - REST API architecture  
 - Secure credential management  
-- Azure Cognitive Services usage  
-- Production-style backend design  
-- Real-time AI sentiment analysis  
+- Azure AI Language usage  
+- Session state handling  
+- Real-time sentiment-aware response design  
+- Public cloud deployment workflow  
 
 ---
 
@@ -173,10 +198,10 @@ GitHub: https://github.com/Vitolop1
 
 ## 🏁 Project Status
 
-✔ Functional  
-✔ Azure Integrated  
-✔ Cloud Deployable  
-✔ Production-Ready Structure  
+✔ Fully Functional  
+✔ Azure AI Integrated  
+✔ Publicly Deployed  
+✔ Academic Submission Ready  
 
 ---
 
