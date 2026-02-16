@@ -1,11 +1,9 @@
-// index.js - Azure Intelligent Support Bot (Pro)
-// Bot Framework + Restify + Azure AI Language (Sentiment/KeyPhrases/Lang/PII)
-//
-// Includes:
-// - GET /           -> serves public/index.html (web chat UI)
-// - GET /health     -> JSON health check
-// - POST /api/analyze -> web chat endpoint (no Emulator needed)
-// - POST /api/messages -> Bot Framework endpoint (for Emulator / channels)
+// index.js - Azure Intelligent Support Bot (Web + Emulator)
+// Serves:
+//   GET  /            -> public/index.html (web chat UI)
+//   GET  /health      -> JSON health check
+//   POST /api/analyze -> web chat endpoint (browser)
+//   POST /api/messages-> Bot Framework endpoint (Emulator)
 
 "use strict";
 
@@ -80,16 +78,10 @@ async function analyzeLanguage(userText) {
     keyphrases: pick(keyphraseRes),
     language: pick(langRes),
     pii: pick(piiRes),
-    rawErrors: {
-      sentiment: sentimentRes.status === "rejected" ? sentimentRes.reason : null,
-      keyphrases: keyphraseRes.status === "rejected" ? keyphraseRes.reason : null,
-      language: langRes.status === "rejected" ? langRes.reason : null,
-      pii: piiRes.status === "rejected" ? piiRes.reason : null,
-    },
   };
 }
 
-// -------------------- Sessions (shared by web + bot) --------------------
+// -------------------- Sessions (web + bot) --------------------
 const sessions = new Map();
 const SESSION_TTL_MS = 45 * 60 * 1000;
 
@@ -143,27 +135,19 @@ function resetSession(session) {
   };
 }
 
-// -------------------- Bot text helpers --------------------
+// -------------------- Reply formatting --------------------
 function tonePrefix(sentimentDoc) {
   const sentiment = sentimentDoc?.sentiment || "neutral";
-  if (sentiment === "negative") return "I got you — we’ll fix this. 💪";
-  if (sentiment === "positive") return "Nice — let’s keep that momentum. 😄";
-  return "Alright — let’s troubleshoot this step-by-step. ✅";
-}
-
-function formatConfidence(sentimentDoc) {
-  const cs = sentimentDoc?.confidenceScores;
-  if (!cs) return "";
-  return ` (pos ${Number(cs.positive).toFixed(2)}, neu ${Number(cs.neutral).toFixed(
-    2
-  )}, neg ${Number(cs.negative).toFixed(2)})`;
+  if (sentiment === "negative") return "Got you. We’ll fix this. 💪";
+  if (sentiment === "positive") return "Nice — let’s keep it going. 😄";
+  return "Alright — let’s troubleshoot step-by-step. ✅";
 }
 
 function piiWarning(piiDoc) {
   const entities = piiDoc?.entities || [];
   if (!entities.length) return null;
   const types = [...new Set(entities.map((e) => e.category).filter(Boolean))].slice(0, 6);
-  return `⚠️ I might be seeing sensitive info (${types.join(
+  return `⚠️ Quick heads-up: I might be seeing sensitive info (${types.join(
     ", "
   )}). Don’t paste passwords/keys/cards/tokens. Redact like: ABCD****WXYZ.`;
 }
@@ -207,11 +191,11 @@ function classifyIssue(text, keyPhrases = []) {
 function flowIntro(mode) {
   const map = {
     triage:
-      "Quick triage: tell me (1) what you’re trying to do, (2) what happened instead, (3) exact error text if any.",
-    network: "Network mode: first — are you on Wi-Fi or Ethernet?",
-    windows: "Windows mode: Windows 10 or 11? What changed recently?",
-    account: "Account mode: Microsoft login, school SSO, or app login?",
-    app: "App mode: what app + version, and what’s the exact error?",
+      "Tell me this (short is fine):\n1) What you’re trying to do\n2) What happens instead\n3) Exact error text (if any)",
+    network: "Network mode:\n1) Wi-Fi or Ethernet?\n2) Does ANY website open?\n3) Any error message?",
+    windows: "Windows mode:\n1) Windows 10 or 11?\n2) What changed recently?\n3) Any error/stop code?",
+    account: "Account mode:\n1) Microsoft login / School SSO / App login?\n2) What exactly happens?\n3) Error text (redacted)?",
+    app: "App mode:\n1) App name + version\n2) Exact error message\n3) What you already tried",
   };
   return map[mode] || map.triage;
 }
@@ -237,37 +221,39 @@ function parseModeCommand(text) {
   return null;
 }
 
-// Core: generate a reply for BOTH web and bot
+// Core: reply engine for BOTH web and bot
 async function handleText(session, userText) {
   const t = lower(userText);
 
   // Commands
   if (t === "help") return { reply: helpText() };
+
   if (t === "reset") {
     resetSession(session);
     return { reply: "✅ Reset done. Type `start` to begin." };
   }
+
   if (t === "start") {
     session.mode = "triage";
     session.step = 0;
-    return { reply: "✅ Starting tech support flow.\n" + flowIntro(session.mode) };
+    return { reply: "✅ Starting tech support.\n\n" + flowIntro(session.mode) };
   }
+
   if (t === "summary") {
     return { reply: "```text\n" + ticketSummary(session.ticket) + "\n```" };
   }
+
   const forcedMode = parseModeCommand(userText);
   if (forcedMode) {
     session.mode = forcedMode;
     session.step = 0;
-    return { reply: `✅ Mode set to: ${forcedMode}\n` + flowIntro(session.mode) };
+    return { reply: `✅ Mode set to: ${forcedMode}\n\n` + flowIntro(session.mode) };
   }
 
   // Azure analysis
   const analysis = await analyzeLanguage(userText);
   const piiMsg = piiWarning(analysis.pii);
-  const detectedLang = analysis.language?.primaryLanguage?.iso6391Name || "unknown";
-  const sentiment = analysis.sentiment?.sentiment || "neutral";
-  const confidence = formatConfidence(analysis.sentiment);
+
   const keyPhrases = analysis.keyphrases?.keyPhrases || [];
   const topKP = keyPhrases.slice(0, 6);
 
@@ -275,24 +261,23 @@ async function handleText(session, userText) {
   if (session.mode === "idle") {
     session.mode = classifyIssue(userText, topKP);
     session.step = 0;
+
     session.ticket.issue = session.ticket.issue || userText.slice(0, 180);
     if (topKP.length) uniqPush(session.ticket.symptoms, "keywords: " + topKP.join(", "));
 
-    const intro = `${tonePrefix(analysis.sentiment)} (lang: ${detectedLang}, sentiment: ${sentiment}${confidence})\n${flowIntro(
-      session.mode
-    )}`;
-    return { reply: (piiMsg ? piiMsg + "\n\n" : "") + intro, meta: { detectedLang, sentiment } };
+    const intro = `${tonePrefix(analysis.sentiment)}\n\n${flowIntro(session.mode)}`;
+    return { reply: (piiMsg ? piiMsg + "\n\n" : "") + intro };
   }
 
-  // Save keywords
+  // Store keywords lightly
   if (topKP.length) uniqPush(session.ticket.symptoms, "keywords: " + topKP.join(", "));
 
-  // Guided flows (shortened but functional)
+  // Guided triage with clear numbering
   if (session.mode === "triage") {
     if (session.step === 0) {
       session.ticket.issue = userText;
       session.step = 1;
-      return { reply: `${tonePrefix(analysis.sentiment)} Got it.\n1) What device? (Windows/Mac/phone + model)` };
+      return { reply: `${tonePrefix(analysis.sentiment)}\n\n1) What device? (Windows/Mac/phone + model)` };
     }
     if (session.step === 1) {
       session.ticket.device = userText;
@@ -302,49 +287,76 @@ async function handleText(session, userText) {
     if (session.step === 2) {
       session.ticket.os = userText;
       session.step = 3;
-      return { reply: "3) Paste exact error text (redacted). If none, describe what happens." };
+      return { reply: "3) Paste the exact error text (redacted). If none, describe what happens." };
     }
     if (session.step === 3) {
       uniqPush(session.ticket.errors, userText);
       session.mode = classifyIssue((session.ticket.issue || "") + " " + userText, topKP);
       session.step = 0;
-      return { reply: `Perfect — switching to: ${session.mode}\n${flowIntro(session.mode)}` };
+      return { reply: `✅ Got it. Switching to: ${session.mode}\n\n${flowIntro(session.mode)}` };
     }
   }
 
   if (session.mode === "network") {
     if (session.step === 0) {
       session.step = 1;
-      return { reply: "Are you on Wi-Fi or Ethernet?" };
+      return { reply: "1) Are you on Wi-Fi or Ethernet?" };
     }
     if (session.step === 1) {
       uniqPush(session.ticket.symptoms, "connection: " + userText);
       session.step = 2;
-      return { reply: "A) Any website opens? B) Fails on ALL sites or only one? Reply: A=yes B=all" };
+      return { reply: "2) Can you open ANY website? (yes/no)\n3) Does it fail on ALL sites or only one?" };
     }
     if (session.step === 2) {
       uniqPush(session.ticket.symptoms, "basic check: " + userText);
       session.step = 3;
-      return { reply: "Run ONE command (Windows) and paste output:\n1) ipconfig /all\n2) ping 8.8.8.8 -n 4\n3) nslookup google.com" };
+      return {
+        reply:
+          "Run ONE command (Windows) and paste output:\n" +
+          "1) ipconfig /all\n" +
+          "2) ping 8.8.8.8 -n 4\n" +
+          "3) nslookup google.com",
+      };
     }
     if (session.step === 3) {
       uniqPush(session.ticket.whatTried, "network diagnostics provided");
       uniqPush(session.ticket.errors, "network output: " + userText.slice(0, 220));
       session.step = 4;
-      return { reply: "Thanks. Next: does it happen only on this device, or multiple devices on the same network?\n(Type `summary` anytime.)" };
+      return {
+        reply:
+          "Thanks.\n\n1) Only this device, or multiple devices on the same network?\n2) If you can, test a phone hotspot to isolate the network.\n\nType `summary` anytime.",
+      };
     }
   }
 
   if (session.mode === "windows") {
-    return { reply: "Windows mode: tell me what changed right before the issue (update/app/driver/new device). Type `summary` anytime." };
+    return {
+      reply:
+        "Windows mode — answer these:\n" +
+        "1) Windows 10 or 11?\n" +
+        "2) What changed recently?\n" +
+        "3) Any exact error/stop code?\n\nType `summary` anytime.",
+    };
   }
 
   if (session.mode === "account") {
-    return { reply: "Account mode: is it Microsoft login, school SSO, or app login? Also paste the error text (redacted). Type `summary` anytime." };
+    return {
+      reply:
+        "Account mode — answer these:\n" +
+        "1) Microsoft login / School SSO / App login?\n" +
+        "2) What exactly happens?\n" +
+        "3) Error text (redacted)?\n\nType `summary` anytime.",
+    };
   }
 
   if (session.mode === "app") {
-    return { reply: "App mode: what app + version, and what’s the exact error message (redacted)? Type `summary` anytime." };
+    return {
+      reply:
+        "App mode — answer these:\n" +
+        "1) App name + version\n" +
+        "2) Exact error message (redacted)\n" +
+        "3) What you already tried\n\nType `summary` anytime.",
+    };
   }
 
   return { reply: "I’m here. Type `start` to begin, or `help` for commands." };
@@ -354,7 +366,7 @@ async function handleText(session, userText) {
 const server = restify.createServer();
 server.use(restify.plugins.bodyParser());
 
-// CORS (so it works in browser cleanly)
+// CORS (ok for browser)
 server.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
@@ -363,7 +375,7 @@ server.use((req, res, next) => {
   return next();
 });
 
-// Serve static web UI
+// Serve web UI (IMPORTANT: this must be BEFORE any other GET "/" that returns JSON)
 server.get(
   "/",
   restify.plugins.serveStatic({
@@ -373,11 +385,12 @@ server.get(
 );
 
 // Health
-server.get("/health", (_req, res, _next) => {
+server.get("/health", (req, res, next) => {
   res.send(200, { ok: true, name: "azure-intelligent-support-bot", time: nowISO() });
+  return next();
 });
 
-// Web chat API (THIS is what your HTML calls)
+// Web chat API (Browser)
 server.post("/api/analyze", async (req, res) => {
   try {
     const text = safeTrim(req.body?.text);
@@ -399,7 +412,6 @@ server.post("/api/analyze", async (req, res) => {
   }
 });
 
-
 // -------------------- Bot Framework Adapter --------------------
 const adapter = new BotFrameworkAdapter({
   appId: env("BOT_APP_ID", { fallback: "" }),
@@ -413,7 +425,7 @@ adapter.onTurnError = async (context, err) => {
   } catch (_) {}
 };
 
-// Bot Framework endpoint (Emulator)
+// Emulator / Channels endpoint
 server.post("/api/messages", async (req, res) => {
   await adapter.processActivity(req, res, async (context) => {
     // Remote bot + Emulator serviceUrl=localhost fix
@@ -440,7 +452,8 @@ server.post("/api/messages", async (req, res) => {
 // Start
 server.listen(PORT, () => {
   console.log(`[${nowISO()}] Server running on http://localhost:${PORT}`);
-  console.log(`[${nowISO()}] Health: http://localhost:${PORT}/health`);
-  console.log(`[${nowISO()}] Web: http://localhost:${PORT}/`);
-  console.log(`[${nowISO()}] Bot endpoint: http://localhost:${PORT}/api/messages`);
+  console.log(`[${nowISO()}] Web:    http://localhost:${PORT}/`);
+  console.log(`[${nowISO()}] Health:  http://localhost:${PORT}/health`);
+  console.log(`[${nowISO()}] Analyze: http://localhost:${PORT}/api/analyze`);
+  console.log(`[${nowISO()}] Bot:    http://localhost:${PORT}/api/messages`);
 });
